@@ -1,70 +1,89 @@
 ---
-<<<<<<< HEAD
-<<<<<<< HEAD
 title: "PA1_template"
 author: "dicenslice"
-date: "10 Mar 2015"
+date: "11 Mar 2015"
 output: html_document
 ---
 
 This is a markdown document for the Peer Assignment 1 of the Course "Reproducible Research". Below, you can find the answers to the questions asked in the assignment, and respective code together with the figures.  
 
 The utilized libraries:
-```{r}
+
+```r
 library(dplyr);library(ggplot2);library(scales);library(stringr)
 ```
 
 The data is unzipped:
-```{r}
+
+```r
 unzip("repdata-data-activity.zip")
 ```
 
 ## Loading and preprocessing the data
 Load data from the activity dataset:
 
-```{r}
+
+```r
 rawdata = read.csv("activity.csv")
 ```
 
 Set the type of date variable as "Date":
-```{r}
+
+```r
 rawdata$date = as.Date(rawdata$date)
 ```
 
 The intervals are in the format "Hour & 5minInterval"; to separate hour&minute component: 
-```{r}
+
+```r
 HourInterval = as.vector(str_pad(rawdata$interval,4,side="left",pad= "0"))
 Hour = substr(HourInterval,1,2)
 Min = substr(HourInterval,3,4)
 ```
 
 Create a new variable called HourMin independent of dates for plotting purposes:
-```{r}
+
+```r
 HourMin = paste0(Hour,":",Min)
 data = cbind(rawdata,HourMin)
 ```
 
 ## What is mean total number of steps taken per day?
 Total number of steps taken per day:
-```{r}
+
+```r
 TotalSteps = data %>% 
   group_by(date) %>% 
   summarize(TotalSteps = sum(steps,na.rm=T))
 ```
 
 Calculate the mean and median of total steps of all days: 
-```{r}
+
+```r
 mean.all = mean(TotalSteps$TotalSteps);print(mean.all)
+```
+
+```
+## [1] 9354
+```
+
+```r
 median.all = median(TotalSteps$TotalSteps);print(median.all)
+```
+
+```
+## [1] 10395
 ```
 
 Histogram of the total number of steps taken each day: 
 for readable number format:
-```{r}
+
+```r
 numformat = function (x) {format(round(x,digits=0),big.mark=" ")}
 ```
 
-```{r}
+
+```r
 ggplot(TotalSteps,aes(x=TotalSteps)) + 
   geom_histogram(binwidth=1000,alpha=.5,fill="steelblue") +
   xlab("Step Count") + ylab("Number of Days") + 
@@ -83,16 +102,19 @@ ggplot(TotalSteps,aes(x=TotalSteps)) +
             ,angle=90,size=7,vjust=1.5)
 ```
 
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10.png) 
+
 Mean of the total number of steps taken per day: 
-```{r}
+
+```r
 MeanStep = data %>%
   group_by(date) %>%
   summarize(MeanStep = mean(steps,na.rm=T))
-
 ```
 
 Median of the total number of steps taken per day: 
-```{r}
+
+```r
 MedianStep = data %>%
   group_by(date) %>%
   summarize(MedianStep = median(steps,na.rm=TRUE))
@@ -101,22 +123,28 @@ MedianStep = data %>%
 ## What is the average daily activity pattern?
 
 Construct the average steps by interval across all days:
-```{r}
+
+```r
 TimeSeries = data %>% 
   group_by(interval,HourMin) %>%
   summarize(AvgStep=mean(steps,na.rm=TRUE))
 ```
 
 The interval with the highest average step: 
-```{r}
-hi.interval = as.numeric(TimeSeries$interval[which(TimeSeries$AvgStep==max(TimeSeries$AvgStep))]);print(hi.interval)
 
+```r
+hi.interval = as.numeric(TimeSeries$interval[which(TimeSeries$AvgStep==max(TimeSeries$AvgStep))]);print(hi.interval)
+```
+
+```
+## [1] 835
 ```
 
 Time series plot of the 5 minute interval vs average number of steps taken and 
 the interval with highest average step: 
 
-```{r}
+
+```r
 ggplot(TimeSeries,aes(x=interval , y=AvgStep)) + 
   scale_x_continuous(breaks=c(0,600,hi.interval,1200,1800),labels=c("00:00","06:00","8:35", "12:00","18:00")) +
 #  theme(axis.text.x=element_text(angle=90))+
@@ -127,16 +155,24 @@ ggplot(TimeSeries,aes(x=interval , y=AvgStep)) +
   geom_vline(xintercept=hi.interval,colour = "red")
 ```
 
+![plot of chunk unnamed-chunk-15](figure/unnamed-chunk-15.png) 
+
 Imputing missing values:
 1: Total number of missing rows in data:  
 
-```{r}
+
+```r
 sum(is.na(data))
+```
+
+```
+## [1] 2304
 ```
 
 2 & 3: Fill the NAs with mean of the specific interval and create a new dataset with 
 filled missing values:
-```{r}
+
+```r
 newdata = merge(data,TimeSeries,by="interval",all.x=T)
 newdata$steps = ifelse(is.na(newdata$steps),newdata$AvgStep,newdata$steps)
 newdata=newdata[,-c(5)]
@@ -145,7 +181,8 @@ newdata=newdata[,-c(5)]
 4: histogram of total number of steps each day: 
 aggregate the data on date and calculate total, mean and median steps for each day:
 
-```{r}
+
+```r
 TotalStepsNew = newdata %>% 
   group_by(date) %>% 
   summarize(TotalSteps = sum(steps)
@@ -154,13 +191,26 @@ TotalStepsNew = newdata %>%
 ```
 
 Calculate the mean and median of total steps of all days: 
-```{r}
+
+```r
 newmean.all = mean(TotalStepsNew$TotalSteps);print(newmean.all)
+```
+
+```
+## [1] 10766
+```
+
+```r
 newmedian.all = median(TotalStepsNew$TotalSteps);print(newmedian.all)
 ```
 
+```
+## [1] 10766
+```
+
 Next, plot histogram: 
-```{r}
+
+```r
 ggplot(TotalStepsNew,aes(x=TotalSteps)) + 
   geom_histogram(binwidth=1000,alpha=.5,fill="steelblue") +
   xlab("Step Count") + ylab("Number of Days") + 
@@ -179,9 +229,12 @@ ggplot(TotalStepsNew,aes(x=TotalSteps)) +
             ,angle=90,size=7,vjust=1.5)
 ```
 
+![plot of chunk unnamed-chunk-20](figure/unnamed-chunk-20.png) 
+
 ## Are there differences in activity patterns between weekdays and weekends?
 Creating a new variable for determining weekdays and weekend:
-```{r}
+
+```r
 newdata.week = newdata %>%
   mutate(weekday = weekdays(date))
 
@@ -191,7 +244,8 @@ newdata.week$weekday = ifelse(newdata.week$weekday %in% c("Saturday","Sunday")
 ```
 
 Panel plot average steps per interval across weekdays/weekends:
-```{r}
+
+```r
 TimeSeriesWeek = newdata.week %>% 
   group_by(interval,HourMin.x,weekday) %>%
   summarize(AvgStep = mean(steps))
@@ -205,6 +259,6 @@ ggplot(TimeSeriesWeek,aes(x=interval , y=AvgStep)) +   scale_x_continuous(breaks
   ylab("Average Step Taken Per Day") +
   ggtitle("Average Steps by Time Intervals") +
   facet_grid(weekday~.)
-
-
 ```
+
+![plot of chunk unnamed-chunk-22](figure/unnamed-chunk-22.png) 
